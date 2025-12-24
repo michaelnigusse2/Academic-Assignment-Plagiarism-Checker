@@ -1,0 +1,675 @@
+from database import SessionLocal
+from models import AcademicSource
+import httpx
+
+SOURCES = [
+    {
+        "title": "Neuroplasticity and Cognitive Rehabilitation",
+        "content": "Neuroplasticity refers to the brain's ability to reorganize itself by forming new neural connections throughout life, which forms the basis for cognitive rehabilitation therapies after brain injury."
+    },
+    {
+        "title": "Postcolonial Theory in Literary Analysis",
+        "content": "Postcolonial theory examines the cultural, political, and economic legacies of colonialism and imperialism, focusing on the experiences of colonized peoples and their representation in literature."
+    },
+    {
+        "title": "Quantum Entanglement and Information Theory",
+        "content": "Quantum entanglement describes particles that remain connected so that actions performed on one affect the other, even when separated by large distances, with implications for quantum computing and secure communication."
+    },
+    {
+        "title": "Epigenetics and Gene Expression Regulation",
+        "content": "Epigenetics involves heritable changes in gene expression that do not involve alterations to the DNA sequence, including DNA methylation and histone modification, influencing development and disease."
+    },
+    {
+        "title": "Game Theory in Economic Decision Making",
+        "content": "Game theory analyzes strategic interactions among rational decision-makers, providing mathematical models for conflict and cooperation in economics, political science, and biology."
+    },
+    {
+        "title": "Feminist Political Ecology",
+        "content": "Feminist political ecology examines how gender relations shape access to and control over natural resources, exploring the intersection of gender, environment, and development."
+    },
+    {
+        "title": "Byzantine Iconography and Theological Symbolism",
+        "content": "Byzantine iconography employs specific visual symbols and artistic conventions to convey complex theological concepts and narratives within Eastern Orthodox Christianity."
+    },
+    {
+        "title": "Computational Fluid Dynamics in Aerospace Engineering",
+        "content": "Computational fluid dynamics uses numerical analysis and algorithms to solve and analyze problems involving fluid flows, crucial for aircraft and spacecraft design."
+    },
+    {
+        "title": "Critical Race Theory in Legal Studies",
+        "content": "Critical race theory interrogates how racial power and inequality are constructed and maintained in legal systems and institutions, challenging neutral conceptions of justice."
+    },
+    {
+        "title": "Paleoclimatology and Proxy Data Analysis",
+        "content": "Paleoclimatology reconstructs past climates using proxy data from tree rings, ice cores, sediment layers, and fossil records to understand long-term climate patterns and changes."
+    },
+    {
+        "title": "Semiotic Analysis of Visual Media",
+        "content": "Semiotics studies signs and symbols as elements of communicative behavior, analyzing how meaning is constructed and interpreted in films, advertisements, and digital media."
+    },
+    {
+        "title": "Biomechanics of Human Movement",
+        "content": "Biomechanics applies mechanical principles to biological systems, analyzing forces and their effects on human movement in sports science, rehabilitation, and ergonomics."
+    },
+    {
+        "title": "Philosophy of Mind and Consciousness Studies",
+        "content": "Philosophy of mind explores the nature of mental phenomena, consciousness, and their relationship to the physical body, addressing the mind-body problem."
+    },
+    {
+        "title": "Supply Chain Optimization Models",
+        "content": "Supply chain optimization uses mathematical models and algorithms to improve efficiency in the flow of goods, information, and finances from supplier to customer."
+    },
+    {
+        "title": "Decolonial Pedagogies in Education",
+        "content": "Decolonial pedagogies challenge Eurocentric educational frameworks, seeking to incorporate Indigenous knowledge systems and create more equitable learning environments."
+    },
+    {
+        "title": "Molecular Phylogenetics and Evolutionary Biology",
+        "content": "Molecular phylogenetics uses DNA and protein sequence data to infer evolutionary relationships among species and reconstruct the tree of life."
+    },
+    {
+        "title": "Urban Sociology and Spatial Inequality",
+        "content": "Urban sociology examines social structures and processes within metropolitan areas, focusing on themes like segregation, gentrification, and the formation of community."
+    },
+    {
+        "title": "Narrative Medicine in Clinical Practice",
+        "content": "Narrative medicine emphasizes the importance of patients' stories in healthcare, using literary and narrative techniques to improve clinical empathy, communication, and ethical practice."
+    },
+    {
+        "title": "Cryptography and Network Security Protocols",
+        "content": "Cryptography develops techniques for secure communication in the presence of adversaries, forming the foundation for modern network security protocols like TLS and SSL."
+    },
+    {
+        "title": "Post-Keynesian Macroeconomics",
+        "content": "Post-Keynesian economics emphasizes the role of fundamental uncertainty, effective demand, and institutional factors in determining macroeconomic outcomes, challenging neoclassical assumptions."
+    },
+    {
+        "title": "Bioarchaeology and Ancient Health",
+        "content": "Bioarchaeology analyzes human skeletal remains from archaeological sites to reconstruct diet, health, disease patterns, and lifestyles of past populations."
+    },
+    {
+        "title": "Phenomenology of Religious Experience",
+        "content": "Phenomenology of religion studies religious experiences and phenomena as they present themselves to consciousness, suspending metaphysical judgments to describe their essential structures."
+    },
+    {
+        "title": "Materials Science of Nanostructures",
+        "content": "Materials science at the nanoscale explores the unique physical, chemical, and mechanical properties of materials with structural dimensions of 1-100 nanometers."
+    },
+    {
+        "title": "Discourse Analysis in Political Communication",
+        "content": "Discourse analysis examines how language constructs social reality in political texts and speeches, revealing power dynamics, ideologies, and framing strategies."
+    },
+    {
+        "title": "Behavioral Economics and Decision Heuristics",
+        "content": "Behavioral economics integrates psychological insights into economic models, studying how cognitive biases and heuristics systematically influence human decision-making."
+    },
+    {
+        "title": "Astrobiology and Planetary Habitability",
+        "content": "Astrobiology studies the origin, evolution, distribution, and future of life in the universe, examining the conditions that make planets habitable."
+    },
+    {
+        "title": "Critical Infrastructure Resilience",
+        "content": "Critical infrastructure resilience involves designing and managing systems like power grids and transportation networks to withstand and recover from disruptions and attacks."
+    },
+    {
+        "title": "Theatre of the Absurd and Existentialism",
+        "content": "Theatre of the Absurd, influenced by existential philosophy, uses irrational and illogical scenarios to highlight the meaninglessness of human existence and the breakdown of communication."
+    },
+    {
+        "title": "Microbiome and Human Health",
+        "content": "The human microbiome consists of trillions of microorganisms living in and on the body, playing crucial roles in digestion, immunity, and disease susceptibility."
+    },
+    {
+        "title": "International Humanitarian Law",
+        "content": "International humanitarian law, or the law of armed conflict, regulates the conduct of war, seeking to limit its effects by protecting persons who are not or are no longer participating."
+    },
+    {
+        "title": "Photogrammetry and 3D Reconstruction",
+        "content": "Photogrammetry extracts geometric information from photographs, enabling the creation of accurate 3D models of objects, terrains, and structures for archaeology, surveying, and engineering."
+    },
+    {
+        "title": "Sociolinguistics and Language Variation",
+        "content": "Sociolinguistics studies the relationship between language and society, analyzing how social factors like class, gender, and ethnicity influence language use and variation."
+    },
+    {
+        "title": "Computational Neuroscience and Neural Networks",
+        "content": "Computational neuroscience uses mathematical models and computer simulations to understand the principles governing brain function, from single neurons to complex cognitive processes."
+    },
+    {
+        "title": "Critical Heritage Studies",
+        "content": "Critical heritage studies examines how the past is used in the present, questioning authorized heritage discourses and exploring issues of memory, identity, and power in heritage management."
+    },
+    {
+        "title": "Tectonic Geomorphology",
+        "content": "Tectonic geomorphology studies the interplay between tectonic processes and surface processes, analyzing how earth's crustal movements shape landscapes over geologic time."
+    },
+    {
+        "title": "Philosophy of Technology",
+        "content": "Philosophy of technology investigates the nature of technology, its relationship with humanity and society, and its ethical implications for the future."
+    },
+    {
+        "title": "Immunotherapy in Cancer Treatment",
+        "content": "Immunotherapy harnesses the body's immune system to fight cancer, using approaches like checkpoint inhibitors, CAR-T cell therapy, and therapeutic vaccines."
+    },
+    {
+        "title": "Digital Humanities and Text Mining",
+        "content": "Digital humanities applies computational tools and methods to humanities research, enabling large-scale analysis of texts, cultural artifacts, and historical data through text mining and visualization."
+    },
+    {
+        "title": "Environmental Economics and Ecosystem Valuation",
+        "content": "Environmental economics analyzes the economic impact of environmental policies and the value of ecosystem services, using tools like cost-benefit analysis to inform decision-making."
+    },
+    {
+        "title": "Performance Studies and Performativity",
+        "content": "Performance studies analyzes performance as a mode of cultural expression and communication, drawing from theater, anthropology, and sociology to understand ritual, play, and social roles."
+    },
+    {
+        "title": "Optogenetics in Neural Circuit Mapping",
+        "content": "Optogenetics uses light to control genetically modified neurons, allowing precise investigation of neural circuits and their role in behavior and disease."
+    },
+    {
+        "title": "Comparative Constitutional Law",
+        "content": "Comparative constitutional law examines the similarities and differences between constitutional systems worldwide, analyzing structures of government, rights protection, and judicial review."
+    },
+    {
+        "title": "Remote Sensing for Environmental Monitoring",
+        "content": "Remote sensing uses satellite or aerial sensor technologies to detect and monitor physical characteristics of an area without direct contact, applied in forestry, agriculture, and climate science."
+    },
+    {
+        "title": "Psycholinguistics and Language Acquisition",
+        "content": "Psycholinguistics studies the psychological and neurobiological factors that enable humans to acquire, use, comprehend, and produce language."
+    },
+    {
+        "title": "Finite Element Analysis in Structural Engineering",
+        "content": "Finite element analysis is a computational technique for predicting how structures react to external forces, vibration, heat, and other physical effects, widely used in engineering design."
+    },
+    {
+        "title": "Animal Studies and Posthumanism",
+        "content": "Animal studies, informed by posthumanist theory, challenges human exceptionalism and explores the ethical, political, and epistemological status of non-human animals."
+    },
+    {
+        "title": "Supramolecular Chemistry and Self-Assembly",
+        "content": "Supramolecular chemistry studies non-covalent interactions between molecules, enabling the design of complex, self-assembling structures with specific functions."
+    },
+    {
+        "title": "Media Archaeology and Technological Obsolescence",
+        "content": "Media archaeology investigates obsolete media technologies and their cultural contexts, challenging linear histories of technological progress and uncovering alternative genealogies."
+    },
+    {
+        "title": "Precision Agriculture and IoT Sensors",
+        "content": "Precision agriculture uses IoT sensors, GPS, and data analytics to optimize field-level management regarding crop farming, aiming to maximize efficiency, yield, and sustainability."
+    },
+    {
+        "title": "Musicology and Schenkerian Analysis",
+        "content": "Schenkerian analysis is a method in music theory that reduces a piece of tonal music to its basic structural framework, revealing deep hierarchical relationships within the composition."
+    },
+    {
+        "title": "Regenerative Medicine and Tissue Engineering",
+        "content": "Regenerative medicine aims to replace or regenerate human cells, tissues, or organs to restore normal function, using approaches like stem cell therapy and biomaterial scaffolds."
+    },
+    {
+        "title": "Disaster Anthropology",
+        "content": "Disaster anthropology studies how communities perceive, experience, and respond to disasters, examining cultural, social, and political dimensions of risk, vulnerability, and recovery."
+    },
+    {
+        "title": "String Theory and Multidimensional Physics",
+        "content": "String theory proposes that fundamental particles are one-dimensional vibrating strings, requiring extra spatial dimensions beyond the familiar three, in an attempt to unify quantum mechanics and general relativity."
+    },
+    {
+        "title": "Visual Anthropology and Ethnographic Film",
+        "content": "Visual anthropology uses photographic and filmic media as research methods and forms of ethnographic representation, exploring culture through visual expression and observation."
+    },
+    {
+        "title": "Cybersecurity Risk Management Frameworks",
+        "content": "Cybersecurity risk management frameworks provide structured approaches for organizations to identify, assess, and mitigate risks to information systems and digital assets."
+    },
+    {
+        "title": "Historical Linguistics and Language Change",
+        "content": "Historical linguistics studies how languages change over time, reconstructing proto-languages and identifying sound laws and grammatical shifts that drive linguistic evolution."
+    },
+    {
+        "title": "Synthetic Biology and Genetic Circuit Design",
+        "content": "Synthetic biology designs and constructs new biological parts, devices, and systems, or redesigns existing natural systems for useful purposes, using principles of genetic circuit engineering."
+    },
+    {
+        "title": "Economic Anthropology and Gift Exchange",
+        "content": "Economic anthropology studies the ways societies organize material production, exchange, and consumption, analyzing systems like gift economies, markets, and reciprocity."
+    },
+    {
+        "title": "Atmospheric Chemistry and Air Pollution Modeling",
+        "content": "Atmospheric chemistry examines the chemical composition of the Earth's atmosphere and the reactions that drive the formation and removal of pollutants, ozone, and aerosols."
+    },
+    {
+        "title": "Queer Theory and Gender Performativity",
+        "content": "Queer theory deconstructs normative categories of sexuality and gender, arguing that identity is performatively constituted through repetitive acts rather than being an inherent essence."
+    },
+    {
+        "title": "Hydrogeology and Groundwater Contaminant Transport",
+        "content": "Hydrogeology studies the distribution and movement of groundwater in soil and rock, modeling how contaminants migrate through aquifers to assess and remediate pollution."
+    },
+    {
+        "title": "Cognitive Archaeology and Ancient Minds",
+        "content": "Cognitive archaeology investigates the development of human cognitive processes through material culture, exploring how tools, art, and symbols reflect ancient thought and symbolism."
+    },
+    {
+        "title": "Algorithmic Fairness and Bias Mitigation",
+        "content": "Algorithmic fairness research aims to identify, measure, and mitigate biases in automated decision-making systems, promoting equity across race, gender, and other protected attributes."
+    },
+    {
+        "title": "Medical Ethnobotany and Traditional Knowledge",
+        "content": "Medical ethnobotany documents and analyzes the traditional use of plants for medicinal purposes by indigenous and local communities, bridging cultural knowledge and pharmacological discovery."
+    },
+    {
+        "title": "Planetary Geology and Surface Processes",
+        "content": "Planetary geology applies geological principles to other celestial bodies, studying their surface features, internal structures, and geological histories through remote sensing and sample analysis."
+    },
+    {
+        "title": "Institutional Economics and Path Dependence",
+        "content": "Institutional economics focuses on the role of institutions—rules, norms, and organizations—in shaping economic behavior, emphasizing concepts like path dependence and transaction costs."
+    },
+    {
+        "title": "Acoustic Ecology and Soundscape Studies",
+        "content": "Acoustic ecology studies the relationship between living beings and their sonic environment, analyzing how soundscapes affect ecological balance and human well-being."
+    },
+    {
+        "title": "Biopolitics and Governmentality",
+        "content": "Biopolitics, following Foucault, analyzes how political power regulates and manages populations through techniques that govern life processes like health, reproduction, and mortality."
+    },
+    {
+        "title": "Computational Chemistry and Molecular Dynamics",
+        "content": "Computational chemistry uses computer simulation to assist in solving chemical problems, modeling molecular structures, reactions, and properties through quantum chemistry and molecular dynamics."
+    },
+    {
+        "title": "Museum Studies and Curatorial Practice",
+        "content": "Museum studies examines the history, theory, and practice of museums, focusing on collection management, exhibition design, public engagement, and the politics of representation."
+    },
+    {
+        "title": "Sustainable Urban Planning and Green Infrastructure",
+        "content": "Sustainable urban planning designs cities to reduce environmental impact and enhance livability, incorporating green infrastructure like parks, green roofs, and permeable surfaces."
+    },
+    {
+        "title": "Pragmatics and Speech Act Theory",
+        "content": "Pragmatics studies how context contributes to meaning in language use, analyzing speech acts—like promises, requests, and apologies—and conversational implicature."
+    },
+    {
+        "title": "Exoplanet Detection and Characterization Methods",
+        "content": "Exoplanet detection uses methods like transit photometry and radial velocity measurements to identify planets orbiting other stars and characterize their atmospheres and potential habitability."
+    },
+    {
+        "title": "Poststructuralist Literary Theory",
+        "content": "Poststructuralism challenges structuralist assumptions of stable meaning, emphasizing the instability of language, deconstruction of binary oppositions, and the role of the reader in creating meaning."
+    },
+    {
+        "title": "Food Security and Agricultural Policy",
+        "content": "Food security exists when all people, at all times, have physical and economic access to sufficient, safe, and nutritious food that meets their dietary needs and food preferences."
+    },
+    {
+        "title": "Human-Computer Interaction and User Experience Design",
+        "content": "Human-computer interaction studies the design and use of computer technology, focusing on the interfaces between people and computers to optimize usability and user experience."
+    },
+    {
+        "title": "Paleoecology and Ancient Ecosystems",
+        "content": "Paleoecology reconstructs past ecosystems and environments by analyzing fossil assemblages, pollen records, and other proxies to understand ecological responses to climate change over millennia."
+    },
+    {
+        "title": "Corporate Social Responsibility Reporting",
+        "content": "Corporate social responsibility reporting involves companies disclosing their social, environmental, and governance performance to stakeholders, driven by standards like the GRI and SASB."
+    },
+    {
+        "title": "Archival Science and Digital Preservation",
+        "content": "Archival science deals with the theory and practice of appraising, collecting, organizing, preserving, and providing access to records of enduring value, increasingly focusing on digital preservation strategies."
+    },
+    {
+        "title": "Vaccine Immunology and Adjuvant Development",
+        "content": "Vaccine immunology studies how vaccines elicit protective immune responses, focusing on antigen design and the development of adjuvants that enhance vaccine efficacy."
+    },
+    {
+        "title": "Psychoanalytic Film Theory",
+        "content": "Psychoanalytic film theory applies Freudian and Lacanian concepts to cinema, analyzing spectator identification, desire, and the unconscious processes elicited by cinematic form and narrative."
+    },
+    {
+        "title": "Renewable Energy Grid Integration",
+        "content": "Renewable energy grid integration addresses the technical and economic challenges of incorporating variable sources like solar and wind power into existing electrical grids while maintaining stability and reliability."
+    },
+    {
+        "title": "Sociolegal Studies and Legal Consciousness",
+        "content": "Sociolegal studies examine law as a social phenomenon, investigating how law is constituted in everyday life and how individuals perceive, understand, and engage with legal norms."
+    },
+    {
+        "title": "Metamaterials and Electromagnetic Cloaking",
+        "content": "Metamaterials are engineered materials with properties not found in nature, such as negative refractive index, enabling applications like electromagnetic cloaking and superlenses."
+    },
+    {
+        "title": "Diaspora Studies and Transnationalism",
+        "content": "Diaspora studies explores the experiences of dispersed populations, examining how transnational networks maintain cultural identities, political mobilizations, and connections to homelands."
+    },
+    {
+        "title": "Geographic Information Systems in Public Health",
+        "content": "Geographic information systems analyze spatial data to map disease outbreaks, identify health disparities, and plan healthcare services, supporting epidemiology and health policy."
+    },
+    {
+        "title": "Aesthetics and the Philosophy of Art",
+        "content": "Aesthetics is the branch of philosophy dealing with the nature of beauty, art, and taste, and the creation and appreciation of beauty, exploring concepts like representation, expression, and formalism."
+    },
+    {
+        "title": "Organizational Behavior and Leadership Theories",
+        "content": "Organizational behavior studies how individuals and groups act within organizations, incorporating theories of motivation, leadership styles, team dynamics, and organizational culture."
+    },
+    {
+        "title": "Zooarchaeology and Subsistence Strategies",
+        "content": "Zooarchaeology analyzes animal remains from archaeological sites to understand past human diets, hunting practices, domestication processes, and environmental interactions."
+    },
+    {
+        "title": "Computational Social Science and Agent-Based Modeling",
+        "content": "Computational social science uses computer simulations, like agent-based models, to study social phenomena, exploring emergent patterns from the interactions of individuals within a system."
+    },
+    {
+        "title": "Marine Protected Area Management",
+        "content": "Marine protected area management involves designing and implementing conservation zones in oceanic and coastal environments to preserve biodiversity, restore fish stocks, and protect ecosystems."
+    },
+    {
+        "title": "Postdigital Aesthetics in Contemporary Art",
+        "content": "Postdigital aesthetics explores art practices that critically engage with digital technology while moving beyond novelty, focusing on materiality, hybridity, and the critique of digital culture itself."
+    },
+    {
+        "title": "Pharmacogenomics and Personalized Medicine",
+        "content": "Pharmacogenomics studies how an individual's genetic makeup affects their response to drugs, aiming to develop personalized medication regimens that maximize efficacy and minimize adverse effects."
+    },
+    {
+        "title": "Critical Disability Studies",
+        "content": "Critical disability studies challenges medical and social models of disability, examining disability as a social, political, and cultural construction, and advocating for rights, access, and inclusion."
+    },
+    {
+        "title": "Seismology and Earthquake Early Warning Systems",
+        "content": "Seismology studies earthquakes and the propagation of elastic waves through the Earth, enabling the development of early warning systems that detect initial tremors to alert populations before stronger shaking arrives."
+    },
+    {
+        "title": "Translation Studies and Cultural Transfer",
+        "content": "Translation studies examines the theory, description, and application of translation, interpreting, and localization, considering cultural, linguistic, and ideological factors in cross-linguistic transfer."
+    },
+    {
+        "title": "Industrial Ecology and Circular Economy",
+        "content": "Industrial ecology analogizes industrial systems to natural ecosystems, aiming to close material and energy loops through strategies like industrial symbiosis and circular economy principles."
+    },
+    {
+        "title": "Music Cognition and Neural Processing of Music",
+        "content": "Music cognition investigates the psychological and neural mechanisms underlying music perception, performance, composition, and the profound emotional responses music evokes."
+    },
+    {
+        "title": "Political Geography and Geopolitics",
+        "content": "Political geography analyzes the spatial dimensions of political processes, studying territories, borders, states, and how power is organized and contested across geographic scales."
+    },
+    {
+        "title": "Tissue Biomechanics and Mechanobiology",
+        "content": "Tissue biomechanics studies the mechanical behavior of biological tissues, while mechanobiology explores how mechanical forces influence cell behavior, gene expression, and tissue development."
+    },
+    {
+        "title": "Memory Studies and Collective Memory",
+        "content": "Memory studies investigates how individuals and societies remember, forget, and commemorate the past, analyzing sites of memory, memorials, and the politics of historical narratives."
+    },
+    {
+        "title": "Dark Matter and Galactic Rotation Curves",
+        "content": "Dark matter is a hypothetical form of matter that does not emit light, inferred from gravitational effects like the rotation curves of galaxies that cannot be explained by visible matter alone."
+    },
+    {
+        "title": "Educational Technology and Learning Analytics",
+        "content": "Educational technology encompasses tools and practices that facilitate learning, while learning analytics uses data analysis to understand and optimize learning environments and student outcomes."
+    },
+    {
+        "title": "Land Change Science and Remote Sensing",
+        "content": "Land change science uses satellite remote sensing and spatial analysis to monitor and understand transformations in land use and land cover, such as deforestation, urbanization, and agricultural expansion."
+    },
+    {
+        "title": "Philosophy of Science and Falsificationism",
+        "content": "Philosophy of science examines the foundations, methods, and implications of science, with falsificationism (Popper) proposing that scientific theories must be empirically testable and potentially refutable."
+    },
+    {
+        "title": "Microeconomics of Market Design",
+        "content": "Market design applies microeconomic theory and game theory to engineer markets and allocation mechanisms that perform well given specific constraints, as seen in spectrum auctions or school choice programs."
+    },
+    {
+        "title": "Forensic Anthropology and Human Identification",
+        "content": "Forensic anthropology applies biological anthropology techniques to legal contexts, analyzing skeletal remains to establish identity, cause of death, and other forensic evidence."
+    },
+    {
+        "title": "Affect Theory and the Politics of Emotion",
+        "content": "Affect theory distinguishes between emotion (personal, qualified feeling) and affect (pre-personal, unqualified intensity), exploring how embodied forces circulate in social and political life."
+    },
+    {
+        "title": "Wireless Sensor Networks and IoT Protocols",
+        "content": "Wireless sensor networks consist of spatially distributed autonomous sensors that monitor environmental or physical conditions, communicating data through IoT protocols like MQTT and CoAP."
+    },
+    {
+        "title": "Classical Rhetoric and Persuasive Discourse",
+        "content": "Classical rhetoric, developed in ancient Greece and Rome, systematically studies the art of persuasion through devices like ethos, pathos, and logos, and the construction of effective arguments."
+    },
+    {
+        "title": "Conservation Genetics and Population Viability",
+        "content": "Conservation genetics uses genetic data to assess the health, diversity, and connectivity of endangered populations, informing management strategies to ensure their long-term viability."
+    },
+    {
+        "title": "Social Network Analysis and Influence Diffusion",
+        "content": "Social network analysis maps and measures relationships and flows between people, groups, or organizations, modeling how information, behaviors, or influence diffuse through networks."
+    },
+    {
+        "title": "Roman Law and Its Reception in Europe",
+        "content": "Roman law forms the historical foundation of many modern legal systems in Europe; its reception involved the adaptation and integration of Roman legal principles into medieval and early modern European jurisprudence."
+    },
+    {
+        "title": "Ecological Economics and Steady-State Systems",
+        "content": "Ecological economics posits that the economy is a subsystem of a finite biosphere, advocating for a steady-state economy that respects ecological limits rather than pursuing unlimited growth."
+    },
+    {
+        "title": "Digital Signal Processing and Filter Design",
+        "content": "Digital signal processing involves the mathematical manipulation of discrete-time signals to filter, analyze, or compress information, fundamental to audio processing, telecommunications, and image analysis."
+    },
+    {
+        "title": "Postmodern Architecture and Deconstructivism",
+        "content": "Postmodern architecture emerged as a reaction against modernist uniformity, incorporating historical references, ornament, and playful forms, with deconstructivism further challenging conventional notions of structure and space."
+    },
+    {
+        "title": "Neuroeconomics and Decision Neuroscience",
+        "content": "Neuroeconomics combines neuroscience, economics, and psychology to study how brain activity underlies economic decision-making, risk assessment, and value computation."
+    },
+    {
+        "title": "Public History and Historical Interpretation",
+        "content": "Public history involves the presentation of history to popular audiences outside academia, through museums, documentaries, historic preservation, and digital projects, engaging with issues of memory and interpretation."
+    },
+    {
+        "title": "Magnetohydrodynamics and Plasma Physics",
+        "content": "Magnetohydrodynamics studies the dynamics of electrically conducting fluids like plasmas in magnetic fields, with applications in astrophysics, fusion energy research, and spacecraft propulsion."
+    },
+    {
+        "title": "Folkloristics and Oral Tradition Studies",
+        "content": "Folkloristics is the academic study of folklore, including oral traditions like myths, legends, folktales, proverbs, and songs, analyzing their variation, transmission, and social functions across cultures."
+    },
+    {
+        "title": "Operations Research and Linear Programming",
+        "content": "Operations research uses advanced analytical methods like linear programming, simulation, and queuing theory to help make better decisions and optimize complex systems in business and government."
+    },
+    {
+        "title": "Art Conservation Science",
+        "content": "Art conservation science applies chemistry, physics, and materials science to analyze, preserve, and restore cultural heritage objects, studying degradation processes and developing treatment protocols."
+    },
+    {
+        "title": "International Relations Theory: Realism vs. Liberalism",
+        "content": "International relations theory provides frameworks for understanding global politics; realism emphasizes state power and anarchy, while liberalism focuses on cooperation, institutions, and interdependence."
+    },
+    {
+        "title": "Circadian Rhythms and Chronobiology",
+        "content": "Chronobiology studies circadian rhythms—biological processes that follow a roughly 24-hour cycle—regulating sleep-wake patterns, hormone release, and metabolism, influenced by environmental cues like light."
+    },
+    {
+        "title": "Textual Criticism and Manuscript Traditions",
+        "content": "Textual criticism seeks to establish the original text of a work by comparing and analyzing its various manuscript versions, identifying scribal errors and editorial interventions over time."
+    },
+    {
+        "title": "Robotics and Autonomous Navigation",
+        "content": "Robotics combines mechanical engineering, electrical engineering, and computer science to design, construct, and operate robots, with autonomous navigation enabling movement in unstructured environments without human intervention."
+    },
+    {
+        "title": "Development Studies and Dependency Theory",
+        "content": "Development studies analyzes economic, social, and political development processes, with dependency theory arguing that resources flow from a 'periphery' of poor states to a 'core' of wealthy states, enriching the latter at the expense of the former."
+    },
+    {
+        "title": "Optical Astronomy and Telescope Design",
+        "content": "Optical astronomy observes celestial objects in visible light, relying on telescope designs like reflectors and refractors, with adaptive optics correcting atmospheric distortion to achieve sharper images."
+    },
+    {
+        "title": "Psychometrics and Test Validity",
+        "content": "Psychometrics is the theory and technique of psychological measurement, assessing the validity (does it measure what it claims?) and reliability (consistency) of tests and instruments."
+    },
+    {
+        "title": "Cultural Geography and Sense of Place",
+        "content": "Cultural geography examines how culture varies across space, focusing on concepts like landscape, place, identity, and the symbolic meanings people attach to their environments."
+    },
+    {
+        "title": "Gene Editing with CRISPR-Cas9",
+        "content": "CRISPR-Cas9 is a revolutionary gene-editing technology that allows precise, targeted modifications to DNA sequences, with vast implications for genetic research, medicine, and biotechnology."
+    },
+    {
+        "title": "Silk Road Studies and Trans-Eurasian Exchange",
+        "content": "Silk Road studies examines the ancient network of trade routes connecting East Asia with the Mediterranean, facilitating the exchange of goods, technologies, religions, and cultures across Eurasia."
+    },
+    {
+        "title": "Computational Geometry and Algorithm Design",
+        "content": "Computational geometry develops algorithms to solve geometric problems, with applications in computer graphics, robotics, geographic information systems, and molecular modeling."
+    },
+    {
+        "title": "Social Movement Theory and Collective Action",
+        "content": "Social movement theory analyzes the emergence, dynamics, and outcomes of collective action aimed at social or political change, examining resource mobilization, political opportunities, and framing processes."
+    },
+    {
+        "title": "Marine Biogeochemistry and the Carbon Pump",
+        "content": "Marine biogeochemistry studies chemical cycles in the ocean, with the biological carbon pump describing the process by which atmospheric CO2 is absorbed and sequestered in the deep sea via phytoplankton photosynthesis and sinking organic matter."
+    },
+    {
+        "title": "Medieval Philosophy and Scholasticism",
+        "content": "Medieval philosophy, dominated by Scholasticism, sought to reconcile Christian theology with classical philosophy (especially Aristotle), using rigorous dialectical methods to address questions of faith and reason."
+    },
+    {
+        "title": "Additive Manufacturing and 3D Printing Materials",
+        "content": "Additive manufacturing, or 3D printing, builds objects layer by layer from digital models, using materials ranging from polymers and metals to ceramics and biocompatible substances for prototyping and production."
+    },
+    {
+        "title": "Critical Media Studies and Platform Capitalism",
+        "content": "Critical media studies analyzes media industries, texts, and audiences through political economy and cultural theory, with platform capitalism describing the dominance of digital platforms that extract and monetize user data."
+    },
+    {
+        "title": "Plant Physiology and Stress Responses",
+        "content": "Plant physiology studies the function and processes of plants, including photosynthesis, respiration, and mechanisms for responding to environmental stresses like drought, salinity, and pathogens."
+    },
+    {
+        "title": "Victorian Literature and the Novel of Manners",
+        "content": "Victorian literature, produced during the reign of Queen Victoria, often features detailed realism and social commentary, with the novel of manners exploring the customs, values, and behaviors of a particular social class."
+    },
+    {
+        "title": "Financial Econometrics and Time Series Analysis",
+        "content": "Financial econometrics applies statistical methods to financial data, using time series analysis to model and forecast asset prices, volatility, and risk, underpinning quantitative finance and algorithmic trading."
+    },
+    {
+        "title": "Human Factors Engineering and Ergonomics",
+        "content": "Human factors engineering, or ergonomics, designs systems, devices, and environments to fit the cognitive and physical capabilities of the user, enhancing safety, performance, and comfort."
+    },
+    {
+        "title": "Archaeoastronomy and Ancient Calendars",
+        "content": "Archaeoastronomy investigates how ancient cultures understood and used astronomical phenomena, studying alignments of monuments, mythologies, and the development of calendars based on celestial cycles."
+    },
+    {
+        "title": "Complex Systems Theory and Emergence",
+        "content": "Complex systems theory studies how interactions among simple components give rise to complex, emergent behaviors that cannot be predicted from the properties of the individual parts alone."
+    },
+    {
+        "title": "Indigenous Knowledge Systems and Epistemology",
+        "content": "Indigenous knowledge systems comprise the understandings, skills, and philosophies developed by societies with long histories of interaction with their natural surroundings, offering distinct epistemologies and ways of knowing."
+    },
+    {
+        "title": "Protein Folding and Misfolding Diseases",
+        "content": "Protein folding is the process by which a polypeptide chain attains its functional three-dimensional structure; misfolding can lead to diseases like Alzheimer's, Parkinson's, and prion disorders."
+    },
+    {
+        "title": "Sound Studies and Historical Acoustemologies",
+        "content": "Sound studies is an interdisciplinary field that examines sound and listening as cultural practices, including historical acoustemologies—how past cultures understood and structured their sonic worlds."
+    },
+    {
+        "title": "Macroprudential Regulation and Financial Stability",
+        "content": "Macroprudential regulation aims to safeguard the entire financial system from systemic risk, using tools like capital buffers and loan-to-value ratios to prevent financial crises."
+    },
+    {
+        "title": "Experimental Archaeology and Replication Studies",
+        "content": "Experimental archaeology replicates or simulates past conditions and processes to test hypotheses about how artifacts were made, used, or how archaeological features were formed."
+    },
+    {
+        "title": "Climate Justice and Equity Considerations",
+        "content": "Climate justice examines the ethical and political dimensions of climate change, arguing that those least responsible for emissions often suffer the most severe impacts, and advocating for equitable solutions."
+    },
+    {
+        "title": "Cognitive Linguistics and Conceptual Metaphor",
+        "content": "Cognitive linguistics posits that language is shaped by general cognitive processes; conceptual metaphor theory argues that abstract thought is largely metaphorical, grounded in embodied experience."
+    },
+    {
+        "title": "Space Law and the Outer Space Treaty",
+        "content": "Space law governs activities in outer space, with the foundational 1967 Outer Space Treaty establishing principles like the non-appropriation of celestial bodies and the peaceful use of space."
+    },
+    {
+        "title": "Biochemical Engineering and Fermentation Technology",
+        "content": "Biochemical engineering applies engineering principles to processes involving biological organisms or molecules, with fermentation technology using microorganisms to produce substances like antibiotics, biofuels, and food products."
+    },
+    {
+        "title": "Material Culture Studies and Object Biographies",
+        "content": "Material culture studies examines the relationship between people and things; the concept of object biographies traces the social life of artifacts from creation through use, circulation, and discard."
+    },
+    {
+        "title": "Quantum Field Theory and Standard Model Physics",
+        "content": "Quantum field theory provides the theoretical framework for particle physics, with the Standard Model describing the fundamental particles and three of the four known forces (excluding gravity)."
+    },
+    {
+        "title": "Global Health Governance and Pandemic Response",
+        "content": "Global health governance involves institutions, norms, and processes designed to address transnational health challenges, coordinating international responses to pandemics and health emergencies."
+    },
+    {
+        "title": "Narrative Psychology and Life Stories",
+        "content": "Narrative psychology studies how people construct and use stories to make sense of their lives, identities, and experiences, viewing narrative as a fundamental mode of human understanding."
+    },
+    {
+        "title": "Soil Science and Pedogenesis",
+        "content": "Soil science studies soil as a natural resource, including its formation (pedogenesis), classification, mapping, and its physical, chemical, biological, and fertility properties."
+    }
+]
+
+from database import SessionLocal
+from models import AcademicSource
+import utils
+
+# ... SOURCES list remains same, skipped for brevity in replacement ...
+# I need to keep SOURCES list. So I will target the end part.
+
+def seed():
+    print("Seeding database check...")
+    db = SessionLocal()
+    
+    # Check if we need to seed
+    count = db.query(AcademicSource).count()
+    if count > 0:
+        print(f"Database already has {count} sources. Skipping insert.")
+    else:
+        print(f"Inserting {len(SOURCES)} sources with embeddings...")
+        for s in SOURCES:
+            print(f"Embedding: {s['title']}")
+            try:
+                embedding = utils.get_embedding(s["content"])
+                db.add(AcademicSource(
+                    title=s["title"],
+                    content=s["content"],
+                    embedding=embedding
+                ))
+            except Exception as e:
+                print(f"Failed to embed {s['title']}: {e}")
+                
+        db.commit()
+        print("Seeding complete.")
+        
+    db.close()
+
+if __name__ == "__main__":
+    seed()
